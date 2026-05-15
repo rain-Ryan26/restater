@@ -7,6 +7,7 @@ Phase 1 已建立本地项目检查 Agent 的最小实现骨架。代码包含 C
 ## 已实现范围
 
 - 输入：`project_path` 和 `user_note`。
+- 默认路径：支持通过 `RESTATER_DEFAULT_PROJECT_PATH` 省略命令行中的项目路径。
 - 输出：`report.md` 和 `state.json`。
 - Graph 节点：抓取上下文、整理需求、规划检查路径、执行检查、打状态、生成最终报告。
 - 工具：filesystem、shell、pdf。

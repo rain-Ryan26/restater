@@ -15,7 +15,7 @@ from restater.tools.filesystem import write_text_no_bom
 def run_check(project_path: Path, user_note: str, output_dir: Path | None, config: RestaterConfig) -> ProjectCheckState:
     project_path = project_path.resolve()
     run_id = time.strftime("%Y%m%d-%H%M%S")
-    output_dir = output_dir or project_path / ".restater" / "runs" / run_id
+    output_dir = (output_dir or Path.cwd() / ".restater" / "runs" / run_id).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     initial: ProjectCheckState = {
@@ -52,4 +52,3 @@ def write_state(path: Path, state: ProjectCheckState) -> None:
         return value
 
     write_text_no_bom(path, json.dumps(convert(state), ensure_ascii=False, indent=2))
-

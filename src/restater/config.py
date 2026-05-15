@@ -39,6 +39,7 @@ class RestaterConfig:
     api_key: str
     api_base: str
     model: str
+    default_project_path: str
     temperature: float
     max_tokens: int
     context_file_limit: int
@@ -52,6 +53,7 @@ class RestaterConfig:
             api_key=api_key,
             api_base=os.getenv("DEEPSEEK_API_BASE", "https://api.deepseek.com").rstrip("/"),
             model=os.getenv("RESTATER_MODEL", "deepseek-v4-pro"),
+            default_project_path=os.getenv("RESTATER_DEFAULT_PROJECT_PATH", ""),
             temperature=_env_float("RESTATER_TEMPERATURE", 0.2),
             max_tokens=_env_int("RESTATER_MAX_TOKENS", 4096),
             context_file_limit=_env_int("RESTATER_CONTEXT_FILE_LIMIT", 300),
@@ -65,4 +67,3 @@ class RestaterConfig:
                 "Missing DEEPSEEK_API_KEY or RESTATER_API_KEY. "
                 "Create .env from .env.example before running model-backed checks."
             )
-

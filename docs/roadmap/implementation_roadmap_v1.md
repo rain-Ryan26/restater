@@ -72,13 +72,15 @@ restater check <project_path> --note "<user_note>" --out <output_dir>
 
 - `project_path`：被检查项目根目录。
 - `user_note`：用户首次文本说明，可为空，但入口应保留该字段。
-- `output_dir`：报告和运行状态输出目录，默认可以是当前项目下的 `.restater/runs/<run_id>/`。
+- `output_dir`：报告和运行状态输出目录，默认是当前 Restater 工作目录下的 `.restater/runs/<run_id>/`。
+- 如果 `RESTATER_DEFAULT_PROJECT_PATH` 已配置，`project_path` 可以省略。
 
 模型相关环境变量：
 
 - `DEEPSEEK_API_KEY`：DeepSeek API key，也可用 `RESTATER_API_KEY` 作为通用别名。
 - `DEEPSEEK_API_BASE`：DeepSeek-compatible API base URL，默认 `https://api.deepseek.com`。
 - `RESTATER_MODEL`：模型名，默认 `deepseek-v4-pro`。
+- `RESTATER_DEFAULT_PROJECT_PATH`：默认被检查项目目录，便于直接运行 `restater check --note ...`。
 - `RESTATER_TEMPERATURE`、`RESTATER_MAX_TOKENS`：模型调用参数。
 
 ### Graph State
