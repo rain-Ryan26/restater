@@ -29,9 +29,10 @@ def ensure_safe_command(command: str) -> None:
 
 def run_powershell(command: str, cwd: Path, *, timeout_seconds: int = 120) -> ShellResult:
     ensure_safe_command(command)
+    wrapped_command = f"[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; {command}"
     start = time.perf_counter()
     completed = subprocess.run(
-        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
+        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", wrapped_command],
         cwd=str(cwd),
         text=True,
         encoding="utf-8",
@@ -48,4 +49,3 @@ def run_powershell(command: str, cwd: Path, *, timeout_seconds: int = 120) -> Sh
         stderr=completed.stderr,
         duration_ms=duration_ms,
     )
-

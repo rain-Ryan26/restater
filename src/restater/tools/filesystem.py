@@ -30,6 +30,7 @@ TEXT_EXTENSIONS = {
 
 EXCLUDED_DIRS = {
     ".git",
+    ".restater",
     ".idea",
     ".vscode",
     ".venv",
@@ -96,4 +97,3 @@ def search_text(root: Path, terms: list[str], *, patterns: list[str] | None = No
         if len(matches) >= limit:
             break
     return matches
-

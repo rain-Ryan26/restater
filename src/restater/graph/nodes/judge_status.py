@@ -24,6 +24,17 @@ def make_judge_status_node(client: DeepSeekChatClient):
             ),
         )
         findings = [FindingItem(**item) for item in response.get("findings", [])]
+        existing = {finding.requirement_id for finding in findings}
+        for requirement in state.get("requirements", []):
+            if requirement.id not in existing:
+                findings.append(
+                    FindingItem(
+                        requirement_id=requirement.id,
+                        status="unknown",
+                        reason="The model did not return a judgement for this requirement in Phase 1.",
+                        evidence_ids=[],
+                    )
+                )
         completion = compute_completion(state.get("requirements", []), findings)
         return {"findings": findings, "completion_estimate": completion, "reasoning_log": reasoning_log}
 
@@ -63,4 +74,3 @@ def compute_completion(requirements: list[RequirementItem], findings: list[Findi
         unknown=unknown,
         excluded=excluded,
     )
-

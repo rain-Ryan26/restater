@@ -26,3 +26,14 @@ Phase 1 已建立本地项目检查 Agent 的最小实现骨架。代码包含 C
 ## 下一步验证
 
 需要用一个真实项目目录和有效 DeepSeek API key 运行端到端检查，观察需求抽取、检查计划、命令执行和完成度估算是否稳定。随后再决定是否收紧命令执行策略、补充测试命令识别规则，或调整报告结构。
+
+## 本地验证记录
+
+- Python 源码已通过内存语法编译检查。
+- CLI 入口 `python -m restater --help` 可正常加载。
+- LangGraph 可编译为 `CompiledStateGraph`。
+- PowerShell shell tool 可执行简单命令并读取输出。
+- JSON 解析工具可解析模型 JSON 输出。
+- 使用临时项目和 fake model client 跑通离线端到端冒烟测试，能够生成 `report.md`、`state.json`，并得到完成度估算。
+
+当前尚未使用真实 DeepSeek API key 跑端到端检查。
