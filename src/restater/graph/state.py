@@ -24,6 +24,9 @@ class ProjectCheckState(TypedDict, total=False):
     requirement_sources: list[RequirementSource]
     requirements: list[RequirementItem]
     plan: list[InspectionStep]
+    inspection_iteration: int
+    inspection_complete: bool
+    inspection_decision: str
     evidence: list[EvidenceItem]
     findings: list[FindingItem]
     completion_estimate: CompletionEstimate | None
@@ -31,4 +34,3 @@ class ProjectCheckState(TypedDict, total=False):
     errors: list[RunError]
     shell_results: list[ShellResult]
     reasoning_log: list[str]
-

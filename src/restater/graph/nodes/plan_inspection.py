@@ -3,7 +3,88 @@ from __future__ import annotations
 from restater.graph.nodes.helpers import compact_json, load_prompt
 from restater.graph.state import ProjectCheckState
 from restater.llm import DeepSeekChatClient
-from restater.models import ContextItem, InspectionStep, RunError
+from restater.models import ContextItem, InspectionStep, RequirementItem, RunError
+
+
+FALLBACK_FILE_PATTERNS = [
+    "*.md",
+    "*.txt",
+    "*.py",
+    "*.java",
+    "*.js",
+    "*.jsx",
+    "*.ts",
+    "*.tsx",
+    "*.sql",
+    "*.json",
+    "*.yaml",
+    "*.yml",
+    "*.toml",
+    "*.xml",
+    "*.properties",
+    "*.sh",
+    "*.ps1",
+    "*.bat",
+    "*.cmd",
+    "*.c",
+    "*.cpp",
+    "*.h",
+    "*.hpp",
+    "*.go",
+    "*.rs",
+    "*.v",
+    "*.vh",
+    "*.sv",
+    "*.svh",
+    "*.xdc",
+    "*.tcl",
+    "*.sdc",
+    "*.asm",
+    "*.s",
+    "*.hex",
+]
+
+FALLBACK_GENERAL_TERMS = [
+    "status",
+    "requirement",
+    "test",
+    "passed",
+    "failed",
+    "done",
+    "TODO",
+    "完成",
+    "未完成",
+    "通过",
+    "失败",
+    "要求",
+    "测试",
+    "验证",
+]
+
+FALLBACK_STOPWORDS = {
+    "and",
+    "or",
+    "the",
+    "with",
+    "for",
+    "from",
+    "into",
+    "that",
+    "this",
+    "must",
+    "should",
+    "provide",
+    "implement",
+    "integrate",
+    "maintain",
+    "avoid",
+    "comply",
+    "function",
+    "quality",
+    "document",
+    "test",
+    "requirement",
+}
 
 
 def make_plan_inspection_node(client: DeepSeekChatClient, progress=None):
@@ -108,16 +189,14 @@ def fallback_plan(state: ProjectCheckState) -> list[InspectionStep]:
                 action="Inspect repository documents and source files for status evidence.",
                 expected_evidence="File matches and source previews that indicate current implementation status.",
                 tool_hint="filesystem",
-                file_patterns=["*.md", "*.py", "*.java", "*.js", "*.ts", "*.tsx"],
-                search_terms=["status", "TODO", "requirement", "test", "完成", "未完成", "要求"],
+                file_patterns=FALLBACK_FILE_PATTERNS,
+                search_terms=FALLBACK_GENERAL_TERMS,
             )
         ]
 
     plan: list[InspectionStep] = []
     for index, requirement in enumerate(requirements[:20], start=1):
-        terms = [term for term in requirement.title.replace("`", " ").split() if len(term) >= 2]
-        if requirement.category != "unknown":
-            terms.append(requirement.category)
+        terms = fallback_search_terms(requirement)
         plan.append(
             InspectionStep(
                 id=f"step-{index:03d}",
@@ -125,8 +204,28 @@ def fallback_plan(state: ProjectCheckState) -> list[InspectionStep]:
                 action=f"Search repository evidence for {requirement.title}.",
                 expected_evidence="Direct file matches, source previews, or absence of matches.",
                 tool_hint="filesystem",
-                file_patterns=["*.md", "*.py", "*.java", "*.js", "*.ts", "*.tsx", "*.sql", "*.json"],
+                file_patterns=FALLBACK_FILE_PATTERNS,
                 search_terms=terms[:8] or [requirement.title],
             )
         )
     return plan
+
+
+def fallback_search_terms(requirement: RequirementItem) -> list[str]:
+    raw_terms = (
+        requirement.title.replace("`", " ").replace("/", " ").replace("-", " ").split()
+        + requirement.description.replace("`", " ").replace("/", " ").replace("-", " ").split()
+    )
+    terms: list[str] = []
+    seen: set[str] = set()
+    for term in raw_terms:
+        cleaned = term.strip(".,:;()[]{}'\"").lower()
+        if len(cleaned) < 3 or cleaned in FALLBACK_STOPWORDS or cleaned in seen:
+            continue
+        seen.add(cleaned)
+        terms.append(cleaned)
+        if len(terms) >= 7:
+            break
+    if requirement.category != "unknown" and requirement.category not in seen:
+        terms.append(requirement.category)
+    return terms

@@ -46,6 +46,7 @@ class RestaterConfig:
     text_read_limit: int
     pdf_page_limit: int
     model_timeout_seconds: int
+    inspection_max_iterations: int
 
     @classmethod
     def from_env(cls) -> "RestaterConfig":
@@ -61,6 +62,7 @@ class RestaterConfig:
             text_read_limit=_env_int("RESTATER_TEXT_READ_LIMIT", 20000),
             pdf_page_limit=_env_int("RESTATER_PDF_PAGE_LIMIT", 6),
             model_timeout_seconds=_env_int("RESTATER_MODEL_TIMEOUT_SECONDS", 120),
+            inspection_max_iterations=_env_int("RESTATER_INSPECTION_MAX_ITERATIONS", 4),
         )
 
     def validate_for_model_call(self) -> None:

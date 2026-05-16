@@ -78,8 +78,29 @@ def classify_path(relative_path: str, path: Path) -> tuple[str, float]:
         return "requirement", 0.8
     if "test" in lowered or "spec" in name:
         return "test", 0.75
-    if suffix in {".py", ".java", ".js", ".jsx", ".ts", ".tsx", ".c", ".cpp", ".h", ".hpp", ".go", ".rs"}:
+    if suffix in {
+        ".py",
+        ".java",
+        ".js",
+        ".jsx",
+        ".ts",
+        ".tsx",
+        ".c",
+        ".cpp",
+        ".h",
+        ".hpp",
+        ".go",
+        ".rs",
+        ".v",
+        ".vh",
+        ".sv",
+        ".svh",
+        ".asm",
+        ".s",
+    }:
         return "code", 0.7
+    if suffix in {".ps1", ".sh", ".bat", ".cmd", ".tcl"}:
+        return "test" if "test" in lowered or "run" in name else "code", 0.65
     if suffix in {".md", ".txt", ".docx"}:
         if "state" in lowered or "stage" in lowered or "status" in lowered or "状态" in lowered:
             return "state", 0.75

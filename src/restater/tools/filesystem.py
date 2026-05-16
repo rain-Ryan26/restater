@@ -26,6 +26,22 @@ TEXT_EXTENSIONS = {
     ".bat",
     ".cmd",
     ".properties",
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".go",
+    ".rs",
+    ".v",
+    ".vh",
+    ".sv",
+    ".svh",
+    ".xdc",
+    ".tcl",
+    ".sdc",
+    ".asm",
+    ".s",
+    ".hex",
 }
 
 EXCLUDED_DIRS = {
@@ -77,8 +93,8 @@ def write_text_no_bom(path: Path, text: str) -> None:
 def search_text(root: Path, terms: list[str], *, patterns: list[str] | None = None, limit: int = 30) -> list[str]:
     if not terms:
         return []
-    matches: list[str] = []
     lowered_terms = [term.lower() for term in terms if term]
+    ranked_matches: list[tuple[int, str, str]] = []
     for path in find_files(root, limit=1000):
         rel = str(path.relative_to(root))
         if patterns and not any(fnmatch.fnmatch(rel, pattern) for pattern in patterns):
@@ -90,10 +106,20 @@ def search_text(root: Path, terms: list[str], *, patterns: list[str] | None = No
         except UnicodeDecodeError:
             continue
         lowered = text.lower()
-        for term in lowered_terms:
-            if term in lowered:
-                matches.append(f"{rel}: contains {term}")
-                break
-        if len(matches) >= limit:
-            break
-    return matches
+        matched_terms = [term for term in lowered_terms if term in lowered]
+        if matched_terms:
+            ranked_matches.append((match_score(rel, matched_terms), rel, f"{rel}: contains {', '.join(matched_terms[:5])}"))
+    ranked_matches.sort(key=lambda item: (-item[0], item[1]))
+    return [message for _, _, message in ranked_matches[:limit]]
+
+
+def match_score(relative_path: str, matched_terms: list[str]) -> int:
+    lowered_path = relative_path.lower().replace("\\", "/")
+    score = len(matched_terms) * 10
+    for marker in ["test_report", "stage", "status", "state", "report", "result", "coverage", "regression"]:
+        if marker in lowered_path:
+            score += 8
+    for marker in ["test", "run", "check", "verify", "verification"]:
+        if marker in lowered_path:
+            score += 4
+    return score
