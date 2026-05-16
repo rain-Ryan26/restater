@@ -18,6 +18,7 @@ def render_markdown_report(
     completion: CompletionEstimate,
     shell_results: list[ShellResult],
     model_summary: str | None = None,
+    inspection_decision: str | None = None,
 ) -> str:
     requirement_by_id = {item.id: item for item in requirements}
     evidence_by_id = {item.id: item for item in evidence}
@@ -32,6 +33,8 @@ def render_markdown_report(
     ]
     if user_note:
         lines.append(f"- 用户初始说明：{user_note}")
+    if inspection_decision:
+        lines.append(f"- 检查过程说明：{inspection_decision}")
     lines.extend(
         [
             "",

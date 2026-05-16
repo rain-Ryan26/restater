@@ -23,6 +23,7 @@ def make_generate_report_node(client: DeepSeekChatClient, progress=None):
                     "requirements": state.get("requirements", []),
                     "findings": state.get("findings", []),
                     "completion_estimate": state.get("completion_estimate"),
+                    "inspection_decision": state.get("inspection_decision", ""),
                     "errors": state.get("errors", []),
                 },
                 limit=40000,
@@ -59,6 +60,7 @@ def make_generate_report_node(client: DeepSeekChatClient, progress=None):
             completion=state["completion_estimate"],
             shell_results=state.get("shell_results", []),
             model_summary=model_summary,
+            inspection_decision=state.get("inspection_decision", ""),
         )
         report_path = Path(state["output_dir"]) / "report.md"
         if progress:

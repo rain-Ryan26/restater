@@ -10,6 +10,9 @@ Task:
 - Use shell commands only for likely safe validation commands such as tests, builds, or version checks.
 - Do not include destructive commands.
 - Return at most 3 next steps.
+- Infer missing evidence from the current requirements and context. If a requirement mentions tests, scripts, generated assets, source modules, reports, or submission packaging, choose targeted reads/searches for those likely evidence types.
+- Avoid repeating the same inspection theme if prior steps already covered it. Move to a different theme when there are uncovered requirements.
+- When using PowerShell commands, use PowerShell-native syntax. Prefer `Get-ChildItem -Name -LiteralPath "path"` over cmd-style commands such as `dir /b`; quote paths and use `-LiteralPath` for filesystem paths.
 
 Schema:
 {

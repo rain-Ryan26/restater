@@ -9,6 +9,9 @@ Task:
 - Use shell commands only for likely safe validation commands such as tests, builds, or version checks.
 - Do not include destructive commands.
 - Keep file patterns broad enough to find evidence.
+- Infer the project type from requirements and context. Plan the project-specific evidence search yourself instead of relying on fixed file names.
+- Group related requirements into separate inspection themes when useful, such as core implementation, debug/integration, automated tests, documentation, or submission packaging.
+- When using PowerShell commands, use PowerShell-native syntax. Prefer `Get-ChildItem -Name -LiteralPath "path"` over cmd-style commands such as `dir /b`; quote paths and use `-LiteralPath` for filesystem paths.
 
 Schema:
 {

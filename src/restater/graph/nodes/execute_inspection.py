@@ -57,7 +57,7 @@ def execute_steps(
     stage: str,
 ) -> None:
     for index, step in enumerate(steps, start=1):
-        target_id = step.target_requirement_ids[0] if step.target_requirement_ids else None
+        target_ids = step.target_requirement_ids or [None]
         try:
             if progress:
                 progress(
@@ -71,28 +71,24 @@ def execute_steps(
                         progress(stage, "trace", f"shell: {command}")
                     result = run_powershell(command, project_path)
                     shell_results.append(result)
-                    evidence.append(
-                        EvidenceItem(
-                            id=next_id("evidence", len(evidence)),
-                            requirement_id=target_id,
-                            source="shell",
-                            content_summary=summarize_shell(result),
-                            raw_ref=command,
-                        )
+                    append_evidence_for_targets(
+                        evidence,
+                        target_ids,
+                        source="shell",
+                        content_summary=summarize_shell(result),
+                        raw_ref=command,
                     )
             elif step.tool_hint == "pdf":
                 for rel in matching_files(project_path, step.file_patterns or ["*.pdf"]):
                     if progress:
                         progress(stage, "trace", f"pdf extract: {rel.relative_to(project_path)}")
                     text = extract_pdf_text(rel, page_limit=config.pdf_page_limit, char_limit=4000)
-                    evidence.append(
-                        EvidenceItem(
-                            id=next_id("evidence", len(evidence)),
-                            requirement_id=target_id,
-                            source="pdf",
-                            content_summary=(text[:800] or "PDF produced no text in first pass."),
-                            raw_ref=str(rel.relative_to(project_path)),
-                        )
+                    append_evidence_for_targets(
+                        evidence,
+                        target_ids,
+                        source="pdf",
+                        content_summary=(text[:800] or "PDF produced no text in first pass."),
+                        raw_ref=str(rel.relative_to(project_path)),
                     )
             else:
                 if progress:
@@ -105,14 +101,12 @@ def execute_steps(
                 if progress:
                     progress(stage, "trace", f"filesystem matches={len(matches)}")
                 summary = "; ".join(matches) if matches else "No direct text matches found."
-                evidence.append(
-                    EvidenceItem(
-                        id=next_id("evidence", len(evidence)),
-                        requirement_id=target_id,
-                        source="file",
-                        content_summary=summary,
-                        raw_ref=", ".join(step.search_terms),
-                    )
+                append_evidence_for_targets(
+                    evidence,
+                    target_ids,
+                    source="file",
+                    content_summary=summary,
+                    raw_ref=", ".join(step.search_terms),
                 )
                 for rel in matching_files(project_path, step.file_patterns)[:5]:
                     try:
@@ -121,17 +115,35 @@ def execute_steps(
                         preview = read_text_preview(rel, limit=2000)
                     except Exception:
                         continue
-                    evidence.append(
-                        EvidenceItem(
-                            id=next_id("evidence", len(evidence)),
-                            requirement_id=target_id,
-                            source="file",
-                            content_summary=preview[:800],
-                            raw_ref=str(rel.relative_to(project_path)),
-                        )
+                    append_evidence_for_targets(
+                        evidence,
+                        target_ids,
+                        source="file",
+                        content_summary=preview[:800],
+                        raw_ref=str(rel.relative_to(project_path)),
                     )
         except Exception as exc:
             errors.append(RunError(stage=stage, message=f"Inspection step failed: {step.id}", detail=str(exc)))
+
+
+def append_evidence_for_targets(
+    evidence: list[EvidenceItem],
+    target_ids: list[str | None],
+    *,
+    source: str,
+    content_summary: str,
+    raw_ref: str | None,
+) -> None:
+    for target_id in target_ids:
+        evidence.append(
+            EvidenceItem(
+                id=next_id("evidence", len(evidence)),
+                requirement_id=target_id,
+                source=source,
+                content_summary=content_summary,
+                raw_ref=raw_ref,
+            )
+        )
 
 
 def normalize_steps(steps: list[InspectionStep | dict]) -> list[InspectionStep]:
