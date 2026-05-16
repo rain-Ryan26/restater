@@ -13,7 +13,7 @@ STATUS_PARTS = {"test_report", "stage", "history", "status", "state", "report"}
 def make_classify_requirement_sources_node(progress=None):
     def classify_requirement_sources(state: ProjectCheckState) -> dict:
         reasoning_log = list(state.get("reasoning_log", []))
-        reasoning_log.append("classify_requirement_sources: assign roles to candidate requirement source files.")
+        reasoning_log.append("classify_requirement_sources: 为候选需求来源文件分配角色。")
         sources = normalize_sources(state.get("requirement_sources", []))
         reviews = [classify_source(source) for source in sources]
         if progress:
@@ -41,7 +41,7 @@ def classify_source(source: RequirementSource) -> RequirementSourceReview:
         return RequirementSourceReview(
             path=source.path,
             role="routing_hint",
-            reason="README/AGENT files are treated as routing or repository guidance unless later requirements quote authoritative sources.",
+            reason="README/AGENT 文件默认作为路由或仓库指引，除非后续需求明确引用权威来源。",
             confidence=min(source.confidence, 0.65),
         )
 
@@ -49,7 +49,7 @@ def classify_source(source: RequirementSource) -> RequirementSourceReview:
         return RequirementSourceReview(
             path=source.path,
             role="authoritative_requirement",
-            reason="Path is under a requirements/spec/rubric/assignment area.",
+            reason="路径位于 requirements/spec/rubric/assignment 相关区域。",
             confidence=max(source.confidence, 0.8),
         )
 
@@ -57,7 +57,7 @@ def classify_source(source: RequirementSource) -> RequirementSourceReview:
         return RequirementSourceReview(
             path=source.path,
             role="status_or_test_evidence",
-            reason="Path points to test reports, status records, history, or generated reports.",
+            reason="路径指向测试报告、状态记录、历史记录或生成报告。",
             confidence=max(min(source.confidence, 0.75), 0.55),
         )
 
@@ -65,7 +65,7 @@ def classify_source(source: RequirementSource) -> RequirementSourceReview:
         return RequirementSourceReview(
             path=source.path,
             role="implementation_doc",
-            reason="Path points to module, design, architecture, or implementation documentation.",
+            reason="路径指向模块、设计、架构或实现文档。",
             confidence=max(min(source.confidence, 0.75), 0.55),
         )
 
@@ -73,7 +73,7 @@ def classify_source(source: RequirementSource) -> RequirementSourceReview:
         return RequirementSourceReview(
             path=source.path,
             role="authoritative_requirement",
-            reason="Filename or summary contains requirement, rubric, grading, assignment, or submission language.",
+            reason="文件名或摘要包含需求、评分、作业或提交相关表述。",
             confidence=max(source.confidence, 0.7),
         )
 
@@ -81,14 +81,14 @@ def classify_source(source: RequirementSource) -> RequirementSourceReview:
         return RequirementSourceReview(
             path=source.path,
             role="status_or_test_evidence",
-            reason="Summary describes current status, tests, regression, or evidence rather than requirements.",
+            reason="摘要描述当前状态、测试、回归或证据，而不是权威需求。",
             confidence=max(min(source.confidence, 0.7), 0.5),
         )
 
     return RequirementSourceReview(
         path=source.path,
         role="low_confidence",
-        reason="No strong signal that this candidate can produce authoritative project requirements.",
+        reason="没有足够信号表明该候选项能产出权威项目需求。",
         confidence=min(source.confidence, 0.45),
     )
 

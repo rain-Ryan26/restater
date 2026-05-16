@@ -61,11 +61,11 @@ class ProjectScanner:
         try:
             if suffix == ".pdf":
                 text = extract_pdf_text(path, page_limit=self.config.pdf_page_limit, char_limit=2000)
-                return compact(text) or "PDF text could not be extracted in the first pass."
+                return compact(text) or "PDF 首轮未提取到文本。"
             if is_text_file(path):
                 return compact(read_text_preview(path, limit=2000))
         except Exception as exc:
-            return f"Preview failed: {exc}"
+            return f"预览失败：{exc}"
         return ""
 
 

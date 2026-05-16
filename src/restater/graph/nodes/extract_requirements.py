@@ -18,7 +18,7 @@ def make_extract_requirements_node(config: RestaterConfig, client: DeepSeekChatC
         project_path = Path(state["project_path"])
         errors = list(state.get("errors", []))
         reasoning_log = list(state.get("reasoning_log", []))
-        reasoning_log.append("extract_requirements: read authoritative requirement sources and ask the model for a structured list.")
+        reasoning_log.append("extract_requirements: 读取权威需求来源，并让模型生成结构化需求清单。")
         sources_payload = []
         sources = authoritative_sources(state)
         if progress:
@@ -35,7 +35,7 @@ def make_extract_requirements_node(config: RestaterConfig, client: DeepSeekChatC
                         progress("extract_requirements", "trace", f"text preview {index}/{len(sources)}: {source.path}")
                     content = read_text_preview(path, limit=config.text_read_limit)
             except Exception as exc:
-                errors.append(RunError(stage="extract_requirements", message=f"Failed to read {source.path}.", detail=str(exc)))
+                errors.append(RunError(stage="extract_requirements", message=f"读取 {source.path} 失败。", detail=str(exc)))
                 content = source.summary
             sources_payload.append({"source": source.model_dump(), "content": content})
 
@@ -43,7 +43,7 @@ def make_extract_requirements_node(config: RestaterConfig, client: DeepSeekChatC
             return {
                 "requirements": [],
                 "errors": errors
-                + [RunError(stage="extract_requirements", message="No authoritative requirement sources were identified.")],
+                + [RunError(stage="extract_requirements", message="未识别到权威需求来源。")],
                 "reasoning_log": reasoning_log,
             }
 
@@ -71,7 +71,7 @@ def make_extract_requirements_node(config: RestaterConfig, client: DeepSeekChatC
             errors.append(
                 RunError(
                     stage="extract_requirements",
-                    message="Model requirement extraction failed; no source-level fallback requirements were generated.",
+                    message="模型需求抽取失败；未生成来源级兜底需求项。",
                     detail=str(exc),
                 )
             )

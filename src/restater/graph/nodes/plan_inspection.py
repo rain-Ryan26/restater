@@ -92,7 +92,7 @@ def make_plan_inspection_node(client: DeepSeekChatClient, progress=None):
 
     def plan_inspection(state: ProjectCheckState) -> dict:
         reasoning_log = list(state.get("reasoning_log", []))
-        reasoning_log.append("plan_inspection: plan repo-verifiable checks from requirements and context index.")
+        reasoning_log.append("plan_inspection: 根据需求和上下文索引规划仓库可验证检查。")
         errors = list(state.get("errors", []))
         try:
             planning_context = context_for_planning(state.get("context_index", []))
@@ -128,7 +128,7 @@ def make_plan_inspection_node(client: DeepSeekChatClient, progress=None):
             errors.append(
                 RunError(
                     stage="plan_inspection",
-                    message="Model inspection planning failed; fell back to filesystem search steps.",
+                    message="模型检查规划失败；改用文件系统搜索兜底步骤。",
                     detail=str(exc),
                 )
             )
@@ -186,8 +186,8 @@ def fallback_plan(state: ProjectCheckState) -> list[InspectionStep]:
             InspectionStep(
                 id="step-001",
                 target_requirement_ids=[],
-                action="Inspect repository documents and source files for status evidence.",
-                expected_evidence="File matches and source previews that indicate current implementation status.",
+                action="检查仓库文档和源码中的状态证据。",
+                expected_evidence="能够说明当前实现状态的文件命中结果和源码预览。",
                 tool_hint="filesystem",
                 file_patterns=FALLBACK_FILE_PATTERNS,
                 search_terms=FALLBACK_GENERAL_TERMS,
@@ -201,8 +201,8 @@ def fallback_plan(state: ProjectCheckState) -> list[InspectionStep]:
             InspectionStep(
                 id=f"step-{index:03d}",
                 target_requirement_ids=[requirement.id],
-                action=f"Search repository evidence for {requirement.title}.",
-                expected_evidence="Direct file matches, source previews, or absence of matches.",
+                action=f"搜索与“{requirement.title}”相关的仓库证据。",
+                expected_evidence="直接文件命中、源码预览，或未找到匹配项的记录。",
                 tool_hint="filesystem",
                 file_patterns=FALLBACK_FILE_PATTERNS,
                 search_terms=terms[:8] or [requirement.title],

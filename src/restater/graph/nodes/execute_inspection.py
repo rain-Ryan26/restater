@@ -19,7 +19,7 @@ def make_execute_inspection_node(config: RestaterConfig, progress=None):
         errors = list(state.get("errors", []))
         shell_results = list(state.get("shell_results", []))
         reasoning_log = list(state.get("reasoning_log", []))
-        reasoning_log.append("execute_inspection: execute planned filesystem, pdf, and shell checks and record evidence.")
+        reasoning_log.append("execute_inspection: 执行已规划的文件系统、PDF 和 shell 检查，并记录证据。")
 
         plan = state.get("plan", [])
         if progress:
@@ -87,7 +87,7 @@ def execute_steps(
                         evidence,
                         target_ids,
                         source="pdf",
-                        content_summary=(text[:800] or "PDF produced no text in first pass."),
+                        content_summary=(text[:800] or "PDF 首轮未提取到文本。"),
                         raw_ref=str(rel.relative_to(project_path)),
                     )
             else:
@@ -100,7 +100,7 @@ def execute_steps(
                 matches = search_text(project_path, step.search_terms, patterns=step.file_patterns, limit=20)
                 if progress:
                     progress(stage, "trace", f"filesystem matches={len(matches)}")
-                summary = "; ".join(matches) if matches else "No direct text matches found."
+                summary = "; ".join(matches) if matches else "未找到直接文本匹配。"
                 append_evidence_for_targets(
                     evidence,
                     target_ids,
@@ -123,7 +123,7 @@ def execute_steps(
                         raw_ref=str(rel.relative_to(project_path)),
                     )
         except Exception as exc:
-            errors.append(RunError(stage=stage, message=f"Inspection step failed: {step.id}", detail=str(exc)))
+            errors.append(RunError(stage=stage, message=f"检查步骤失败：{step.id}", detail=str(exc)))
 
 
 def append_evidence_for_targets(
@@ -165,5 +165,5 @@ def summarize_shell(result: ShellResult) -> str:
     out = result.stdout.strip()[:500]
     err = result.stderr.strip()[:500]
     if result.exit_code == 0:
-        return f"Command succeeded with exit code 0. Output: {out}"
-    return f"Command failed with exit code {result.exit_code}. stdout: {out} stderr: {err}"
+        return f"命令执行成功，退出码 0。输出：{out}"
+    return f"命令执行失败，退出码 {result.exit_code}。stdout：{out} stderr：{err}"

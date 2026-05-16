@@ -15,7 +15,7 @@ def make_collect_context_node(config: RestaterConfig, progress=None):
         project_path = Path(state["project_path"])
         errors = list(state.get("errors", []))
         reasoning_log = list(state.get("reasoning_log", []))
-        reasoning_log.append("collect_context: inspect user note, scan project files, and collect candidate requirement sources.")
+        reasoning_log.append("collect_context: 读取用户说明，扫描项目文件，并收集候选需求来源。")
         try:
             if progress:
                 progress("collect_context", "trace", f"scan project: {project_path}")
@@ -27,14 +27,14 @@ def make_collect_context_node(config: RestaterConfig, progress=None):
                     f"scanned files={len(context)}, requirement_sources={len(sources)}",
                 )
         except Exception as exc:
-            errors.append(RunError(stage="collect_context", message="Project scan failed.", detail=str(exc)))
+            errors.append(RunError(stage="collect_context", message="项目扫描失败。", detail=str(exc)))
             context, sources = [], []
         evidence = list(state.get("evidence", []))
         evidence.append(
             EvidenceItem(
                 id="evidence-001",
                 source="model",
-                content_summary=f"Scanned {len(context)} files and identified {len(sources)} likely requirement sources.",
+                content_summary=f"已扫描 {len(context)} 个文件，并识别出 {len(sources)} 个可能的需求来源。",
                 raw_ref=str(project_path),
             )
         )

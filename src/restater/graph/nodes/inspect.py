@@ -22,7 +22,7 @@ def make_inspect_node(config: RestaterConfig, client: DeepSeekChatClient, progre
         shell_results = normalize_shell_results(state.get("shell_results", []))
         accumulated_plan = normalize_steps(state.get("plan", []))
         reasoning_log = list(state.get("reasoning_log", []))
-        reasoning_log.append(f"inspect: iteration {iteration} plans and executes the next small inspection batch.")
+        reasoning_log.append(f"inspect: 第 {iteration} 轮规划并执行下一小批检查。")
 
         if progress:
             progress(
@@ -47,12 +47,12 @@ def make_inspect_node(config: RestaterConfig, client: DeepSeekChatClient, progre
             errors.append(
                 RunError(
                     stage="inspect",
-                    message="Model inspection decision failed; fell back to local filesystem inspection steps.",
+                    message="模型检查决策失败；改用本地文件系统兜底检查步骤。",
                     detail=str(exc),
                 )
             )
             ready = False
-            decision = "Model inspection decision failed; using local fallback steps."
+            decision = "模型检查决策失败，改用本地兜底检查步骤。"
             next_steps = fallback_plan(state)[:3]
             next_steps = normalize_next_steps([step.model_dump() for step in next_steps], iteration)
             if progress:
@@ -63,7 +63,7 @@ def make_inspect_node(config: RestaterConfig, client: DeepSeekChatClient, progre
             return {
                 "inspection_iteration": iteration,
                 "inspection_complete": True,
-                "inspection_decision": decision or "Inspection evidence is ready for judgement.",
+                "inspection_decision": decision or "检查证据已足够进入最终判断。",
                 "errors": errors,
                 "reasoning_log": reasoning_log,
             }
@@ -81,7 +81,7 @@ def make_inspect_node(config: RestaterConfig, client: DeepSeekChatClient, progre
         accumulated_plan.extend(next_steps)
 
         if reached_limit:
-            decision = f"{decision} Reached inspection iteration limit; entering judgement."
+            decision = f"{decision} 已达到检查轮数上限，进入最终判断。"
             if progress:
                 progress("inspect", "trace", "iteration limit reached; next node is judge_status")
 

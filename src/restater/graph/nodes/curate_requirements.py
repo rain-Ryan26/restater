@@ -17,7 +17,7 @@ SOURCE_LEVEL_PATTERNS = [
 def make_curate_requirements_node(progress=None):
     def curate_requirements(state: ProjectCheckState) -> dict:
         reasoning_log = list(state.get("reasoning_log", []))
-        reasoning_log.append("curate_requirements: filter source-level and non-authoritative candidate requirements.")
+        reasoning_log.append("curate_requirements: 过滤来源级和非权威候选需求。")
         errors = list(state.get("errors", []))
         candidates = normalize_requirements(state.get("requirements", []))
         reviews = normalize_reviews(state.get("requirement_source_reviews", []))
@@ -45,8 +45,8 @@ def make_curate_requirements_node(progress=None):
             errors.append(
                 RunError(
                     stage="curate_requirements",
-                    message="No reliable requirements remained after filtering candidate requirements.",
-                    detail="Source-level fallback items and non-authoritative README/index/status documents were excluded.",
+                    message="过滤候选需求后没有剩余的可靠需求项。",
+                    detail="来源级兜底项和非权威 README、索引、状态文档已被排除。",
                 )
             )
 

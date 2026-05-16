@@ -123,7 +123,7 @@ def summarize_evidence(evidence: EvidenceItem) -> str:
         path_refs = extract_path_refs(summary)
         if path_refs:
             summary = "文件匹配：" + "；".join(path_refs[:3])
-        elif summary.startswith("No direct text matches found"):
+        elif summary.startswith("No direct text matches found") or summary.startswith("未找到直接文本匹配"):
             summary = "未找到直接文本匹配"
     elif evidence.source == "pdf":
         summary = "PDF 文本已解析，详见引用位置" if summary else "PDF 未提取到文本"

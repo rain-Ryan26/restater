@@ -10,6 +10,12 @@ from typing import Any
 
 from .config import RestaterConfig
 
+DEFAULT_LANGUAGE_INSTRUCTION = """语言策略：
+- 所有面向用户可见的自然语言输出默认使用简体中文。
+- 这适用于 JSON 字符串字段，例如 summary、reason、action、expected_evidence、title、description 和面向错误展示的说明。
+- 技术标识、文件路径、命令、status 枚举值、JSON key 和代码符号保持原样。
+- 不要因为提示词、来源文档或 schema 示例含有英文就切换成英文。"""
+
 
 @dataclass
 class ChatMessage:
@@ -65,9 +71,10 @@ class DeepSeekChatClient:
         return content.strip()
 
     def complete_json(self, system_prompt: str, user_prompt: str) -> dict[str, Any]:
+        localized_system_prompt = f"{DEFAULT_LANGUAGE_INSTRUCTION}\n\n{system_prompt}"
         content = self.complete(
             [
-                ChatMessage(role="system", content=system_prompt),
+                ChatMessage(role="system", content=localized_system_prompt),
                 ChatMessage(role="user", content=user_prompt),
             ]
         )

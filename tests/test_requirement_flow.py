@@ -11,6 +11,7 @@ from restater.config import RestaterConfig
 from restater.graph.nodes.classify_requirement_sources import classify_source
 from restater.graph.nodes.curate_requirements import make_curate_requirements_node
 from restater.graph.nodes.extract_requirements import make_extract_requirements_node
+from restater.llm import ChatMessage, DeepSeekChatClient
 from restater.models import RequirementItem, RequirementSource, RequirementSourceReview
 
 
@@ -127,12 +128,29 @@ class RequirementFlowTest(unittest.TestCase):
             )
 
         self.assertEqual([], result["requirements"])
-        self.assertIn("no source-level fallback", result["errors"][0].message)
+        self.assertIn("未生成来源级兜底需求项", result["errors"][0].message)
+
+    def test_json_model_calls_prepend_default_chinese_language_policy(self) -> None:
+        client = RecordingClient()
+
+        client.complete_json("system body", "{}")
+
+        self.assertIn("所有面向用户可见的自然语言输出默认使用简体中文", client.messages[0].content)
+        self.assertIn("system body", client.messages[0].content)
 
 
 class FailingClient:
     def complete_json(self, system_prompt: str, user_prompt: str) -> dict:
         raise RuntimeError("invalid model json")
+
+
+class RecordingClient(DeepSeekChatClient):
+    def __init__(self) -> None:
+        self.messages: list[ChatMessage] = []
+
+    def complete(self, messages: list[ChatMessage], *, temperature: float | None = None) -> str:
+        self.messages = messages
+        return "{}"
 
 
 def test_config() -> RestaterConfig:

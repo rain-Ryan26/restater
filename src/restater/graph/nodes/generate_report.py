@@ -15,7 +15,7 @@ def make_generate_report_node(client: DeepSeekChatClient, progress=None):
 
     def generate_report(state: ProjectCheckState) -> dict:
         reasoning_log = list(state.get("reasoning_log", []))
-        reasoning_log.append("generate_report: render a developer-facing markdown report from structured findings.")
+        reasoning_log.append("generate_report: 根据结构化检查结果渲染面向开发者的 Markdown 报告。")
         errors = list(state.get("errors", []))
         try:
             user_prompt = compact_json(
@@ -46,7 +46,7 @@ def make_generate_report_node(client: DeepSeekChatClient, progress=None):
             errors.append(
                 RunError(
                     stage="generate_report",
-                    message="Model report summary failed; rendered report without model summary.",
+                    message="模型报告摘要生成失败；已渲染不含模型摘要的报告。",
                     detail=str(exc),
                 )
             )

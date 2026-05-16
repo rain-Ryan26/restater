@@ -15,7 +15,7 @@ def make_judge_status_node(client: DeepSeekChatClient, progress=None):
 
     def judge_status(state: ProjectCheckState) -> dict:
         reasoning_log = list(state.get("reasoning_log", []))
-        reasoning_log.append("judge_status: compare requirements with evidence and estimate completion.")
+        reasoning_log.append("judge_status: 对照需求和证据判断状态并估算完成度。")
         errors = list(state.get("errors", []))
         evidence = normalize_evidence(state.get("evidence", []))
         added = supplement_judgement_evidence(
@@ -25,7 +25,7 @@ def make_judge_status_node(client: DeepSeekChatClient, progress=None):
             evidence=evidence,
         )
         if added:
-            reasoning_log.append(f"judge_status: added {added} supplemental context evidence items before judgement.")
+            reasoning_log.append(f"judge_status: 最终判断前补充了 {added} 条上下文证据。")
             if progress:
                 progress("judge_status", "trace", f"supplemental evidence added={added}")
         try:
@@ -57,7 +57,7 @@ def make_judge_status_node(client: DeepSeekChatClient, progress=None):
             errors.append(
                 RunError(
                     stage="judge_status",
-                    message="Model status judgement failed; marked repo-verifiable requirements as unknown.",
+                    message="模型状态判断失败；仓库可验证需求已标记为不确定。",
                     detail=str(exc),
                 )
             )
@@ -69,7 +69,7 @@ def make_judge_status_node(client: DeepSeekChatClient, progress=None):
                     FindingItem(
                         requirement_id=requirement.id,
                         status="unknown",
-                        reason="The model did not return a judgement for this requirement in Phase 1.",
+                        reason="模型未返回该需求的判断结果，当前阶段按不确定处理。",
                         evidence_ids=[],
                     )
                 )
@@ -214,7 +214,7 @@ def compute_completion(requirements: list[RequirementItem], findings: list[Findi
     percent = (score / total * 100) if total else 0.0
     return CompletionEstimate(
         percent=percent,
-        basis="done=1, partial=0.5, missing/unknown=0; non-repo-verifiable requirements excluded in Phase 1.",
+        basis="已完成=1，部分完成=0.5，未完成/不确定=0；当前阶段不纳入非仓库可验证需求。",
         done=done,
         partial=partial,
         missing=missing,

@@ -42,11 +42,13 @@ PDF 提取入口位于 `src/restater/tools/pdf.py`。该入口会屏蔽 `pypdf` 
 
 模型调用集中在 `src/restater/llm.py`。请求超时由 `RESTATER_MODEL_TIMEOUT_SECONDS` 控制，默认 120 秒。HTTP 错误、连接错误、响应超时和 API 返回 JSON 解析失败都会转换为带上下文的 `RuntimeError`。
 
+`DeepSeekChatClient.complete_json` 会在所有 JSON 模型调用的系统提示词前追加统一语言策略：所有面向用户可见的自然语言字段默认使用简体中文；技术标识、文件路径、命令、JSON key、枚举值和代码符号保持原样。各节点 prompt 也在模板内重复声明该约束，避免需求抽取、检查规划、循环检查决策、状态判断和报告摘要阶段因为英文模板或英文需求源而返回英文自然语言。
+
 `inspect` 不把完整 `context_index` 原样送入模型。该节点会优先保留 requirement、state、test、doc、code 类上下文，最多传入 50 条、每条摘要最多 300 字，并将模型输入上限收紧到 25K 字符，避免把低价值文件索引拖进规划阶段。`judge_status` 会额外接收面向判定排序的上下文摘要，优先保留 state/test/doc/code 材料。
 
 以下节点会捕获模型异常并记录 `RunError`：
 
-- `extract_requirements`：降级为每个需求来源生成一个低置信度需求项。
+- `extract_requirements`：降级为不生成来源级兜底需求项，并记录错误。
 - `inspect`：降级为基于需求标题和类别的文件搜索步骤。
 - `judge_status`：降级为对仓库可验证需求标记 `unknown`。
 - `generate_report`：降级为不含模型摘要的 Markdown 报告。
