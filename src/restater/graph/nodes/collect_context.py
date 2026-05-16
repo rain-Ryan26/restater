@@ -15,7 +15,7 @@ def make_collect_context_node(config: RestaterConfig, progress=None):
         project_path = Path(state["project_path"])
         errors = list(state.get("errors", []))
         reasoning_log = list(state.get("reasoning_log", []))
-        reasoning_log.append("collect_context: inspect user note, scan project files, and classify requirement sources.")
+        reasoning_log.append("collect_context: inspect user note, scan project files, and collect candidate requirement sources.")
         try:
             if progress:
                 progress("collect_context", "trace", f"scan project: {project_path}")

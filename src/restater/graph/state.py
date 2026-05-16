@@ -10,6 +10,7 @@ from restater.models import (
     InspectionStep,
     RequirementItem,
     RequirementSource,
+    RequirementSourceReview,
     RunError,
     ShellResult,
 )
@@ -22,6 +23,7 @@ class ProjectCheckState(TypedDict, total=False):
     output_dir: str
     context_index: list[ContextItem]
     requirement_sources: list[RequirementSource]
+    requirement_source_reviews: list[RequirementSourceReview]
     requirements: list[RequirementItem]
     plan: list[InspectionStep]
     inspection_iteration: int

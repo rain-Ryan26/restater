@@ -6,7 +6,7 @@ from restater.config import RestaterConfig
 from restater.graph.nodes.helpers import compact_json, load_prompt
 from restater.graph.state import ProjectCheckState
 from restater.llm import DeepSeekChatClient
-from restater.models import RequirementItem, RunError
+from restater.models import RequirementItem, RequirementSource, RequirementSourceReview, RunError
 from restater.tools.filesystem import read_text_preview
 from restater.tools.pdf import extract_pdf_text
 
@@ -18,9 +18,9 @@ def make_extract_requirements_node(config: RestaterConfig, client: DeepSeekChatC
         project_path = Path(state["project_path"])
         errors = list(state.get("errors", []))
         reasoning_log = list(state.get("reasoning_log", []))
-        reasoning_log.append("extract_requirements: read likely requirement sources and ask the model for a structured list.")
+        reasoning_log.append("extract_requirements: read authoritative requirement sources and ask the model for a structured list.")
         sources_payload = []
-        sources = state.get("requirement_sources", [])
+        sources = authoritative_sources(state)
         if progress:
             progress("extract_requirements", "trace", f"read requirement sources: {len(sources)}")
         for index, source in enumerate(sources, start=1):
@@ -43,7 +43,7 @@ def make_extract_requirements_node(config: RestaterConfig, client: DeepSeekChatC
             return {
                 "requirements": [],
                 "errors": errors
-                + [RunError(stage="extract_requirements", message="No requirement sources were identified.")],
+                + [RunError(stage="extract_requirements", message="No authoritative requirement sources were identified.")],
                 "reasoning_log": reasoning_log,
             }
 
@@ -71,31 +71,36 @@ def make_extract_requirements_node(config: RestaterConfig, client: DeepSeekChatC
             errors.append(
                 RunError(
                     stage="extract_requirements",
-                    message="Model requirement extraction failed; fell back to source-level requirements.",
+                    message="Model requirement extraction failed; no source-level fallback requirements were generated.",
                     detail=str(exc),
                 )
             )
-            requirements = fallback_requirements(sources_payload)
+            requirements = []
         return {"requirements": requirements, "errors": errors, "reasoning_log": reasoning_log}
 
     return extract_requirements
 
 
-def fallback_requirements(sources_payload: list[dict]) -> list[RequirementItem]:
-    requirements: list[RequirementItem] = []
-    for index, item in enumerate(sources_payload, start=1):
-        source = item["source"]
-        summary = (item.get("content") or source.get("summary") or "").strip()
-        description = summary[:500] if summary else "Requirement source exists, but model extraction did not complete."
-        requirements.append(
-            RequirementItem(
-                id=f"req-{index:03d}",
-                title=f"Review requirement source {source['path']}",
-                description=description,
-                source_path=source["path"],
-                category="unknown",
-                verifiable_in_repo=True,
-                confidence=0.2,
-            )
-        )
-    return requirements
+def authoritative_sources(state: ProjectCheckState) -> list[RequirementSource]:
+    sources = normalize_sources(state.get("requirement_sources", []))
+    reviews = normalize_reviews(state.get("requirement_source_reviews", []))
+    if not reviews:
+        return sources
+    authoritative_paths = {
+        normalize_path(review.path)
+        for review in reviews
+        if review.role == "authoritative_requirement"
+    }
+    return [source for source in sources if normalize_path(source.path) in authoritative_paths]
+
+
+def normalize_sources(items: list[RequirementSource | dict]) -> list[RequirementSource]:
+    return [item if isinstance(item, RequirementSource) else RequirementSource(**item) for item in items]
+
+
+def normalize_reviews(items: list[RequirementSourceReview | dict]) -> list[RequirementSourceReview]:
+    return [item if isinstance(item, RequirementSourceReview) else RequirementSourceReview(**item) for item in items]
+
+
+def normalize_path(path: str) -> str:
+    return path.replace("\\", "/").lower()

@@ -19,6 +19,19 @@ class RequirementSource(BaseModel):
     confidence: float = 0.0
 
 
+class RequirementSourceReview(BaseModel):
+    path: str
+    role: Literal[
+        "authoritative_requirement",
+        "routing_hint",
+        "implementation_doc",
+        "status_or_test_evidence",
+        "low_confidence",
+    ]
+    reason: str
+    confidence: float = 0.0
+
+
 class RequirementItem(BaseModel):
     id: str
     title: str
@@ -78,4 +91,3 @@ class ShellResult(BaseModel):
     stdout: str = ""
     stderr: str = ""
     duration_ms: int = 0
-

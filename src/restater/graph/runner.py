@@ -37,6 +37,7 @@ def run_check(
         "output_dir": str(output_dir),
         "context_index": [],
         "requirement_sources": [],
+        "requirement_source_reviews": [],
         "requirements": [],
         "plan": [],
         "inspection_iteration": 0,

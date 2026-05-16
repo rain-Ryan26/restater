@@ -5,7 +5,9 @@ from collections.abc import Callable
 from langgraph.graph import END, START, StateGraph
 
 from restater.config import RestaterConfig
+from restater.graph.nodes.classify_requirement_sources import make_classify_requirement_sources_node
 from restater.graph.nodes.collect_context import make_collect_context_node
+from restater.graph.nodes.curate_requirements import make_curate_requirements_node
 from restater.graph.nodes.extract_requirements import make_extract_requirements_node
 from restater.graph.nodes.generate_report import make_generate_report_node
 from restater.graph.nodes.inspect import make_inspect_node, should_continue_inspection
@@ -22,16 +24,30 @@ def build_graph(config: RestaterConfig, progress: ProgressCallback | None = None
     graph = StateGraph(ProjectCheckState)
     graph.add_node("collect_context", with_progress("collect_context", make_collect_context_node(config, progress), progress))
     graph.add_node(
+        "classify_requirement_sources",
+        with_progress(
+            "classify_requirement_sources",
+            make_classify_requirement_sources_node(progress),
+            progress,
+        ),
+    )
+    graph.add_node(
         "extract_requirements",
         with_progress("extract_requirements", make_extract_requirements_node(config, client, progress), progress),
+    )
+    graph.add_node(
+        "curate_requirements",
+        with_progress("curate_requirements", make_curate_requirements_node(progress), progress),
     )
     graph.add_node("inspect", with_progress("inspect", make_inspect_node(config, client, progress), progress))
     graph.add_node("judge_status", with_progress("judge_status", make_judge_status_node(client, progress), progress))
     graph.add_node("generate_report", with_progress("generate_report", make_generate_report_node(client, progress), progress))
 
     graph.add_edge(START, "collect_context")
-    graph.add_edge("collect_context", "extract_requirements")
-    graph.add_edge("extract_requirements", "inspect")
+    graph.add_edge("collect_context", "classify_requirement_sources")
+    graph.add_edge("classify_requirement_sources", "extract_requirements")
+    graph.add_edge("extract_requirements", "curate_requirements")
+    graph.add_edge("curate_requirements", "inspect")
     graph.add_conditional_edges(
         "inspect",
         should_continue_inspection,

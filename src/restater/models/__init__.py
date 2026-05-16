@@ -6,6 +6,7 @@ from .schemas import (
     InspectionStep,
     RequirementItem,
     RequirementSource,
+    RequirementSourceReview,
     RunError,
     ShellResult,
 )
@@ -18,7 +19,7 @@ __all__ = [
     "InspectionStep",
     "RequirementItem",
     "RequirementSource",
+    "RequirementSourceReview",
     "RunError",
     "ShellResult",
 ]
-

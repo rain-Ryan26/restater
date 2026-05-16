@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import re
+
 from restater.models import CompletionEstimate, EvidenceItem, FindingItem, RequirementItem, ShellResult
+
+REQUIREMENT_SUMMARY_LIMIT = 120
+EVIDENCE_SUMMARY_LIMIT = 120
 
 
 def render_markdown_report(
@@ -59,8 +64,8 @@ def render_markdown_report(
             title_text = requirement.title if requirement else finding.requirement_id
             lines.append(f"### {title_text}")
             if requirement:
-                lines.append(f"- 来源：`{requirement.source_path}`")
-                lines.append(f"- 需求：{requirement.description}")
+                lines.append(f"- 需求源：`{requirement.source_path}`")
+                lines.append(f"- 检查主题：{summarize_requirement(requirement)}")
             lines.append(f"- 判断：{finding.reason}")
             refs = [evidence_by_id.get(eid) for eid in finding.evidence_ids]
             refs = [ref for ref in refs if ref is not None]
@@ -68,7 +73,7 @@ def render_markdown_report(
                 lines.append("- 证据：")
                 for ref in refs:
                     raw = f"（`{ref.raw_ref}`）" if ref.raw_ref else ""
-                    lines.append(f"  - {ref.content_summary}{raw}")
+                    lines.append(f"  - {summarize_evidence(ref)}{raw}")
             lines.append("")
 
     if shell_results:
@@ -101,3 +106,41 @@ def render_markdown_report(
     )
     return "\n".join(lines)
 
+
+def summarize_requirement(requirement: RequirementItem) -> str:
+    summary = compact_text(requirement.description)
+    if not summary:
+        summary = requirement.title
+    return truncate_text(summary, REQUIREMENT_SUMMARY_LIMIT)
+
+
+def summarize_evidence(evidence: EvidenceItem) -> str:
+    summary = compact_text(evidence.content_summary)
+    if evidence.source == "file" and evidence.raw_ref:
+        path_refs = extract_path_refs(summary)
+        if path_refs:
+            summary = "文件匹配：" + "；".join(path_refs[:3])
+        elif summary.startswith("No direct text matches found"):
+            summary = "未找到直接文本匹配"
+    elif evidence.source == "pdf":
+        summary = "PDF 文本已解析，详见引用位置" if summary else "PDF 未提取到文本"
+    return truncate_text(summary, EVIDENCE_SUMMARY_LIMIT)
+
+
+def compact_text(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def truncate_text(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1].rstrip() + "…"
+
+
+def extract_path_refs(text: str) -> list[str]:
+    refs: list[str] = []
+    for match in re.finditer(r"([A-Za-z0-9_.\-/\\]+):\d+", text):
+        ref = match.group(1)
+        if "/" in ref or "\\" in ref:
+            refs.append(ref)
+    return refs

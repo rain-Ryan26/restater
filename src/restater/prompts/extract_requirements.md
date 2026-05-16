@@ -6,6 +6,9 @@ Task:
 - Read the provided user note and candidate requirement sources.
 - Extract the project requirements that can guide repository inspection.
 - Keep requirements concise and concrete.
+- Do not copy long passages from source documents into any field.
+- Write each requirement description as one short developer-facing inspection item, not as source text.
+- Preserve source paths for traceability instead of quoting original requirement content.
 - Mark requirements that cannot be verified from repository artifacts as `verifiable_in_repo=false`.
 - Use stable IDs like `REQ-001`.
 
