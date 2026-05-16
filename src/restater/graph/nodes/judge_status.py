@@ -3,7 +3,7 @@ from __future__ import annotations
 from restater.graph.nodes.helpers import compact_json, load_prompt
 from restater.graph.state import ProjectCheckState
 from restater.llm import DeepSeekChatClient
-from restater.models import CompletionEstimate, FindingItem, RequirementItem
+from restater.models import CompletionEstimate, FindingItem, RequirementItem, RunError
 
 
 def make_judge_status_node(client: DeepSeekChatClient):
@@ -12,18 +12,29 @@ def make_judge_status_node(client: DeepSeekChatClient):
     def judge_status(state: ProjectCheckState) -> dict:
         reasoning_log = list(state.get("reasoning_log", []))
         reasoning_log.append("judge_status: compare requirements with evidence and estimate completion.")
-        response = client.complete_json(
-            system_prompt,
-            compact_json(
-                {
-                    "requirements": state.get("requirements", []),
-                    "evidence": state.get("evidence", []),
-                    "errors": state.get("errors", []),
-                },
-                limit=50000,
-            ),
-        )
-        findings = [FindingItem(**item) for item in response.get("findings", [])]
+        errors = list(state.get("errors", []))
+        try:
+            response = client.complete_json(
+                system_prompt,
+                compact_json(
+                    {
+                        "requirements": state.get("requirements", []),
+                        "evidence": state.get("evidence", []),
+                        "errors": state.get("errors", []),
+                    },
+                    limit=50000,
+                ),
+            )
+            findings = [FindingItem(**item) for item in response.get("findings", [])]
+        except Exception as exc:
+            errors.append(
+                RunError(
+                    stage="judge_status",
+                    message="Model status judgement failed; marked repo-verifiable requirements as unknown.",
+                    detail=str(exc),
+                )
+            )
+            findings = []
         existing = {finding.requirement_id for finding in findings}
         for requirement in state.get("requirements", []):
             if requirement.id not in existing:
@@ -36,7 +47,7 @@ def make_judge_status_node(client: DeepSeekChatClient):
                     )
                 )
         completion = compute_completion(state.get("requirements", []), findings)
-        return {"findings": findings, "completion_estimate": completion, "reasoning_log": reasoning_log}
+        return {"findings": findings, "completion_estimate": completion, "errors": errors, "reasoning_log": reasoning_log}
 
     return judge_status
 

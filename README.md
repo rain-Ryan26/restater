@@ -26,6 +26,7 @@ DEEPSEEK_API_KEY=...
 DEEPSEEK_API_BASE=https://api.deepseek.com
 RESTATER_MODEL=deepseek-v4-pro
 RESTATER_DEFAULT_PROJECT_PATH=E:\D_C_tryings1\restaterplayground1
+RESTATER_MODEL_TIMEOUT_SECONDS=120
 ```
 
 默认输出目录是：
@@ -35,6 +36,8 @@ RESTATER_DEFAULT_PROJECT_PATH=E:\D_C_tryings1\restaterplayground1
 ```
 
 其中 `report.md` 是最终检查报告，`state.json` 是本轮运行的结构化状态。
+
+运行时默认输出各 Graph 节点的开始和结束信息，用于定位当前停留阶段。需要关闭进度输出时追加 `--quiet`。每个节点完成后都会刷新 `state.json`，模型调用超时或返回异常时会记录到 `errors` 并尽量生成降级报告。
 
 ## 当前边界
 

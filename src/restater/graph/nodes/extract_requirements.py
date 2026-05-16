@@ -40,18 +40,47 @@ def make_extract_requirements_node(config: RestaterConfig, client: DeepSeekChatC
                 "reasoning_log": reasoning_log,
             }
 
-        response = client.complete_json(
-            system_prompt,
-            compact_json(
-                {
-                    "project_path": state["project_path"],
-                    "user_note": state.get("user_note", ""),
-                    "sources": sources_payload,
-                }
-            ),
-        )
-        requirements = [RequirementItem(**item) for item in response.get("requirements", [])]
+        try:
+            response = client.complete_json(
+                system_prompt,
+                compact_json(
+                    {
+                        "project_path": state["project_path"],
+                        "user_note": state.get("user_note", ""),
+                        "sources": sources_payload,
+                    }
+                ),
+            )
+            requirements = [RequirementItem(**item) for item in response.get("requirements", [])]
+        except Exception as exc:
+            errors.append(
+                RunError(
+                    stage="extract_requirements",
+                    message="Model requirement extraction failed; fell back to source-level requirements.",
+                    detail=str(exc),
+                )
+            )
+            requirements = fallback_requirements(sources_payload)
         return {"requirements": requirements, "errors": errors, "reasoning_log": reasoning_log}
 
     return extract_requirements
 
+
+def fallback_requirements(sources_payload: list[dict]) -> list[RequirementItem]:
+    requirements: list[RequirementItem] = []
+    for index, item in enumerate(sources_payload, start=1):
+        source = item["source"]
+        summary = (item.get("content") or source.get("summary") or "").strip()
+        description = summary[:500] if summary else "Requirement source exists, but model extraction did not complete."
+        requirements.append(
+            RequirementItem(
+                id=f"req-{index:03d}",
+                title=f"Review requirement source {source['path']}",
+                description=description,
+                source_path=source["path"],
+                category="unknown",
+                verifiable_in_repo=True,
+                confidence=0.2,
+            )
+        )
+    return requirements

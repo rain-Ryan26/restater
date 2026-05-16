@@ -2,11 +2,14 @@
 
 ## 运行
 
+.\.venv\Scripts\Activate.ps1
+
 `.env` 中设置了 `RESTATER_DEFAULT_PROJECT_PATH`，可以省略项目路径：
 
-```powershell
-python -m restater check --note "项目初始说明"
-```
+
+python -m restater check --note "你来整理一下这个项目的进度"
+想要安静输出的时候使用   --quiet
+
 
 
 ## 输出

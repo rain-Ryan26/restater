@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import socket
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -39,15 +40,22 @@ class DeepSeekChatClient:
             },
         )
         try:
-            with urllib.request.urlopen(request, timeout=120) as response:
+            with urllib.request.urlopen(request, timeout=self.config.model_timeout_seconds) as response:
                 raw = response.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
             raise RuntimeError(f"Model API HTTP {exc.code}: {detail}") from exc
         except urllib.error.URLError as exc:
             raise RuntimeError(f"Model API request failed: {exc}") from exc
+        except (TimeoutError, socket.timeout) as exc:
+            raise RuntimeError(
+                f"Model API request timed out after {self.config.model_timeout_seconds} seconds."
+            ) from exc
 
-        body = json.loads(raw)
+        try:
+            body = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"Model API returned invalid JSON: {raw[:500]}") from exc
         choices = body.get("choices") or []
         if not choices:
             raise RuntimeError(f"Model API returned no choices: {raw[:500]}")
@@ -81,4 +89,3 @@ def parse_json_object(text: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError("Expected a JSON object from model output.")
     return value
-

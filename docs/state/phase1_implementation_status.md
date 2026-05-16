@@ -12,6 +12,8 @@ Phase 1 已建立本地项目检查 Agent 的最小实现骨架。代码包含 C
 - Graph 节点：抓取上下文、整理需求、规划检查路径、执行检查、打状态、生成最终报告。
 - 工具：filesystem、shell、pdf。
 - 模型：通过 `DEEPSEEK_API_KEY`、`DEEPSEEK_API_BASE`、`RESTATER_MODEL` 调用 DeepSeek-compatible chat completion API。
+- 可观测性：CLI 默认输出每个 Graph 节点的开始和结束；每个节点完成后刷新 `state.json`。
+- 降级处理：需求抽取、检查计划、状态判断和报告摘要的模型调用失败时，记录 `RunError` 并尽量生成可读报告。
 - 持久化：文件系统输出，不使用数据库。
 
 ## 未实现范围
@@ -37,4 +39,4 @@ Phase 1 已建立本地项目检查 Agent 的最小实现骨架。代码包含 C
 - JSON 解析工具可解析模型 JSON 输出。
 - 使用临时项目和 fake model client 跑通离线端到端冒烟测试，能够生成 `report.md`、`state.json`，并得到完成度估算。
 
-当前尚未使用真实 DeepSeek API key 跑端到端检查。
+真实 DeepSeek API 调用已暴露过读响应超时问题；当前实现已补充超时错误包装、阶段进度输出和模型节点降级路径。
