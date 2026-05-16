@@ -3,12 +3,14 @@ from .schemas import (
     ContextItem,
     EvidenceItem,
     FindingItem,
+    InspectionProgress,
     InspectionStep,
     RequirementItem,
     RequirementSource,
     RequirementSourceReview,
     RunError,
     ShellResult,
+    ValidationAttempt,
 )
 
 __all__ = [
@@ -16,10 +18,12 @@ __all__ = [
     "ContextItem",
     "EvidenceItem",
     "FindingItem",
+    "InspectionProgress",
     "InspectionStep",
     "RequirementItem",
     "RequirementSource",
     "RequirementSourceReview",
     "RunError",
     "ShellResult",
+    "ValidationAttempt",
 ]

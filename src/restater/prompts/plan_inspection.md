@@ -27,7 +27,7 @@ Schema:
       "target_requirement_ids": ["REQ-001"],
       "action": "要检查什么",
       "expected_evidence": "什么证据可以确认该检查目标",
-      "tool_hint": "filesystem|shell|pdf|model",
+      "tool_hint": "filesystem|shell|validation|pdf|model",
       "file_patterns": ["*.md", "src/**/*.py"],
       "search_terms": ["keyword"],
       "commands": []

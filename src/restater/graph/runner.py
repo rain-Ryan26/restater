@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from restater.config import RestaterConfig
 from restater.graph.builder import build_graph
 from restater.graph.state import ProjectCheckState
-from restater.models import RunError
+from restater.models import InspectionProgress, RunError
 from restater.tools.filesystem import write_text_no_bom
 
 
@@ -43,12 +43,14 @@ def run_check(
         "inspection_iteration": 0,
         "inspection_complete": False,
         "inspection_decision": "",
+        "inspection_progress": InspectionProgress(),
         "evidence": [],
         "findings": [],
         "completion_estimate": None,
         "report_path": None,
         "errors": [],
         "shell_results": [],
+        "validation_attempts": [],
         "reasoning_log": [],
     }
     state_path = output_dir / "state.json"

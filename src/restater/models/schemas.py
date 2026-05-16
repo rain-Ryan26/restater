@@ -47,10 +47,30 @@ class InspectionStep(BaseModel):
     target_requirement_ids: list[str] = Field(default_factory=list)
     action: str
     expected_evidence: str = ""
-    tool_hint: Literal["filesystem", "shell", "pdf", "model"] = "filesystem"
+    tool_hint: Literal["filesystem", "shell", "pdf", "model", "validation"] = "filesystem"
     file_patterns: list[str] = Field(default_factory=list)
     search_terms: list[str] = Field(default_factory=list)
     commands: list[str] = Field(default_factory=list)
+
+
+class InspectionProgress(BaseModel):
+    coverage_summary: str = ""
+    missing_parts: list[str] = Field(default_factory=list)
+    next_action_type: Literal[
+        "filesystem",
+        "search",
+        "read",
+        "validation",
+        "pdf",
+        "report",
+        "finish",
+        "unknown",
+    ] = "unknown"
+    automation_test_assessment: str = ""
+    open_questions: list[str] = Field(default_factory=list)
+    inspected_refs: list[str] = Field(default_factory=list)
+    validation_attempts: list[str] = Field(default_factory=list)
+    stop_reason: str = ""
 
 
 class EvidenceItem(BaseModel):
@@ -91,3 +111,18 @@ class ShellResult(BaseModel):
     stdout: str = ""
     stderr: str = ""
     duration_ms: int = 0
+
+
+class ValidationAttempt(BaseModel):
+    command: str
+    normalized_command: str = ""
+    cwd: str
+    purpose: str = ""
+    exit_code: int | None = None
+    success: bool = False
+    summary: str = ""
+    stdout_excerpt: str = ""
+    stderr_excerpt: str = ""
+    report_paths: list[str] = Field(default_factory=list)
+    runnable: bool = True
+    blocked_reason: str = ""

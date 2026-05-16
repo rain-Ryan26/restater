@@ -7,12 +7,14 @@ from restater.models import (
     ContextItem,
     EvidenceItem,
     FindingItem,
+    InspectionProgress,
     InspectionStep,
     RequirementItem,
     RequirementSource,
     RequirementSourceReview,
     RunError,
     ShellResult,
+    ValidationAttempt,
 )
 
 
@@ -29,10 +31,12 @@ class ProjectCheckState(TypedDict, total=False):
     inspection_iteration: int
     inspection_complete: bool
     inspection_decision: str
+    inspection_progress: InspectionProgress
     evidence: list[EvidenceItem]
     findings: list[FindingItem]
     completion_estimate: CompletionEstimate | None
     report_path: str | None
     errors: list[RunError]
     shell_results: list[ShellResult]
+    validation_attempts: list[ValidationAttempt]
     reasoning_log: list[str]

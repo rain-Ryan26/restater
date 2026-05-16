@@ -6,10 +6,11 @@ from pathlib import Path
 from restater.config import RestaterConfig
 from restater.graph.nodes.helpers import next_id
 from restater.graph.state import ProjectCheckState
-from restater.models import EvidenceItem, InspectionStep, RunError, ShellResult
+from restater.models import EvidenceItem, InspectionStep, RunError, ShellResult, ValidationAttempt
 from restater.tools.filesystem import find_files, read_text_preview, search_text
 from restater.tools.pdf import extract_pdf_text
 from restater.tools.shell import run_powershell
+from restater.tools.validation import run_validation_command
 
 
 def make_execute_inspection_node(config: RestaterConfig, progress=None):
@@ -18,6 +19,7 @@ def make_execute_inspection_node(config: RestaterConfig, progress=None):
         evidence = list(state.get("evidence", []))
         errors = list(state.get("errors", []))
         shell_results = list(state.get("shell_results", []))
+        validation_attempts = list(state.get("validation_attempts", []))
         reasoning_log = list(state.get("reasoning_log", []))
         reasoning_log.append("execute_inspection: 执行已规划的文件系统、PDF 和 shell 检查，并记录证据。")
 
@@ -30,6 +32,7 @@ def make_execute_inspection_node(config: RestaterConfig, progress=None):
             evidence=evidence,
             errors=errors,
             shell_results=shell_results,
+            validation_attempts=validation_attempts,
             config=config,
             progress=progress,
             stage="execute_inspection",
@@ -39,6 +42,7 @@ def make_execute_inspection_node(config: RestaterConfig, progress=None):
             "evidence": evidence,
             "errors": errors,
             "shell_results": shell_results,
+            "validation_attempts": validation_attempts,
             "reasoning_log": reasoning_log,
         }
 
@@ -53,6 +57,7 @@ def execute_steps(
     errors: list[RunError],
     shell_results: list[ShellResult],
     config: RestaterConfig,
+    validation_attempts: list[ValidationAttempt] | None = None,
     progress=None,
     stage: str,
 ) -> None:
@@ -65,11 +70,14 @@ def execute_steps(
                     "trace",
                     f"step {index}/{len(steps)}: tool={step.tool_hint}, action={step.action[:120]}",
                 )
-            if step.tool_hint == "shell" or step.commands:
+            if step.tool_hint in {"shell", "validation"} or step.commands:
                 for command in step.commands:
                     if progress:
                         progress(stage, "trace", f"shell: {command}")
-                    result = run_powershell(command, project_path)
+                    if step.tool_hint == "validation":
+                        result = execute_validation_command(command, project_path, validation_attempts)
+                    else:
+                        result = execute_shell_or_validation(command, project_path, validation_attempts)
                     shell_results.append(result)
                     append_evidence_for_targets(
                         evidence,
@@ -167,3 +175,28 @@ def summarize_shell(result: ShellResult) -> str:
     if result.exit_code == 0:
         return f"命令执行成功，退出码 0。输出：{out}"
     return f"命令执行失败，退出码 {result.exit_code}。stdout：{out} stderr：{err}"
+
+
+def execute_validation_command(
+    command: str,
+    project_path: Path,
+    validation_attempts: list[ValidationAttempt] | None,
+) -> ShellResult:
+    result, attempt = run_validation_command(command, project_path)
+    if validation_attempts is not None:
+        validation_attempts.append(attempt)
+    return result
+
+
+def execute_shell_or_validation(
+    command: str,
+    project_path: Path,
+    validation_attempts: list[ValidationAttempt] | None,
+) -> ShellResult:
+    result, attempt = run_validation_command(command, project_path)
+    unsupported = "does not look like a supported read-only validation command" in attempt.blocked_reason
+    if attempt.runnable or not unsupported:
+        if validation_attempts is not None:
+            validation_attempts.append(attempt)
+        return result
+    return run_powershell(command, project_path)
