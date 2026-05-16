@@ -6,7 +6,7 @@ from restater.llm import DeepSeekChatClient
 from restater.models import CompletionEstimate, FindingItem, RequirementItem, RunError
 
 
-def make_judge_status_node(client: DeepSeekChatClient):
+def make_judge_status_node(client: DeepSeekChatClient, progress=None):
     system_prompt = load_prompt("judge_status.md")
 
     def judge_status(state: ProjectCheckState) -> dict:
@@ -14,18 +14,29 @@ def make_judge_status_node(client: DeepSeekChatClient):
         reasoning_log.append("judge_status: compare requirements with evidence and estimate completion.")
         errors = list(state.get("errors", []))
         try:
+            user_prompt = compact_json(
+                {
+                    "requirements": state.get("requirements", []),
+                    "evidence": state.get("evidence", []),
+                    "errors": state.get("errors", []),
+                },
+                limit=50000,
+            )
+            if progress:
+                progress(
+                    "judge_status",
+                    "trace",
+                    "model call: status judgement, "
+                    f"requirements={len(state.get('requirements', []))}, "
+                    f"evidence={len(state.get('evidence', []))}, input_chars={len(user_prompt)}",
+                )
             response = client.complete_json(
                 system_prompt,
-                compact_json(
-                    {
-                        "requirements": state.get("requirements", []),
-                        "evidence": state.get("evidence", []),
-                        "errors": state.get("errors", []),
-                    },
-                    limit=50000,
-                ),
+                user_prompt,
             )
             findings = [FindingItem(**item) for item in response.get("findings", [])]
+            if progress:
+                progress("judge_status", "trace", f"model returned findings={len(findings)}")
         except Exception as exc:
             errors.append(
                 RunError(

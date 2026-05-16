@@ -12,6 +12,7 @@ Task:
 
 Schema:
 {
+  "decision_summary": "brief visible summary of how the plan was scoped",
   "plan": [
     {
       "id": "STEP-001",
@@ -26,5 +27,4 @@ Schema:
   ]
 }
 
-Use a brief decision summary internally before deciding, but output only JSON.
-
+Output only JSON. Put the visible planning summary in `decision_summary`; do not include hidden reasoning steps.

@@ -3,10 +3,10 @@ from __future__ import annotations
 from restater.graph.nodes.helpers import compact_json, load_prompt
 from restater.graph.state import ProjectCheckState
 from restater.llm import DeepSeekChatClient
-from restater.models import InspectionStep, RunError
+from restater.models import ContextItem, InspectionStep, RunError
 
 
-def make_plan_inspection_node(client: DeepSeekChatClient):
+def make_plan_inspection_node(client: DeepSeekChatClient, progress=None):
     system_prompt = load_prompt("plan_inspection.md")
 
     def plan_inspection(state: ProjectCheckState) -> dict:
@@ -14,19 +14,35 @@ def make_plan_inspection_node(client: DeepSeekChatClient):
         reasoning_log.append("plan_inspection: plan repo-verifiable checks from requirements and context index.")
         errors = list(state.get("errors", []))
         try:
+            planning_context = context_for_planning(state.get("context_index", []))
+            user_prompt = compact_json(
+                {
+                    "project_path": state["project_path"],
+                    "user_note": state.get("user_note", ""),
+                    "requirements": state.get("requirements", []),
+                    "context_index": planning_context,
+                },
+                limit=25000,
+            )
+            if progress:
+                progress(
+                    "plan_inspection",
+                    "trace",
+                    "prepare planning payload: "
+                    f"requirements={len(state.get('requirements', []))}, "
+                    f"context_items={len(planning_context)}, input_chars={len(user_prompt)}",
+                )
+                progress("plan_inspection", "trace", "model call: inspection planning")
             response = client.complete_json(
                 system_prompt,
-                compact_json(
-                    {
-                        "project_path": state["project_path"],
-                        "user_note": state.get("user_note", ""),
-                        "requirements": state.get("requirements", []),
-                        "context_index": state.get("context_index", []),
-                    },
-                    limit=50000,
-                ),
+                user_prompt,
             )
             plan = [InspectionStep(**item) for item in response.get("plan", [])]
+            if progress:
+                summary = response.get("decision_summary")
+                if isinstance(summary, str) and summary.strip():
+                    progress("plan_inspection", "trace", f"model summary: {summary.strip()[:300]}")
+                progress("plan_inspection", "trace", f"model returned plan_steps={len(plan)}")
         except Exception as exc:
             errors.append(
                 RunError(
@@ -39,6 +55,47 @@ def make_plan_inspection_node(client: DeepSeekChatClient):
         return {"plan": plan, "errors": errors, "reasoning_log": reasoning_log}
 
     return plan_inspection
+
+
+def context_for_planning(context: list[ContextItem]) -> list[dict]:
+    priority = {
+        "requirement": 0,
+        "state": 1,
+        "test": 2,
+        "doc": 3,
+        "code": 4,
+        "artifact": 5,
+        "unknown": 6,
+    }
+    normalized = [normalize_context_item(item) for item in context]
+    filtered = [item for item in normalized if item["kind"] not in {"artifact", "unknown"}]
+    filtered.sort(key=lambda item: (priority.get(item["kind"], 9), -item["confidence"], item["path"]))
+    selected = filtered[:50]
+    return [
+        {
+            "path": item["path"],
+            "kind": item["kind"],
+            "summary": item["summary"][:300],
+            "confidence": item["confidence"],
+        }
+        for item in selected
+    ]
+
+
+def normalize_context_item(item: ContextItem | dict) -> dict:
+    if isinstance(item, dict):
+        return {
+            "path": str(item.get("path", "")),
+            "kind": str(item.get("kind", "unknown")),
+            "summary": str(item.get("summary", "")),
+            "confidence": float(item.get("confidence", 0.0) or 0.0),
+        }
+    return {
+        "path": item.path,
+        "kind": item.kind,
+        "summary": item.summary,
+        "confidence": item.confidence,
+    }
 
 
 def fallback_plan(state: ProjectCheckState) -> list[InspectionStep]:

@@ -10,6 +10,9 @@ Phase 1 已建立本地项目检查 Agent 的最小实现骨架。代码包含 C
 - 默认路径：支持通过 `RESTATER_DEFAULT_PROJECT_PATH` 省略命令行中的项目路径。
 - 输出：`report.md` 和 `state.json`。
 - Graph 节点：抓取上下文、整理需求、规划检查路径、执行检查、打状态、生成最终报告。
+- 需求来源识别：优先识别 `requirements/spec/rubric/assignment` 目录、`AGENT.md`、`README.md` 和文件名带需求关键词的文档；避免把普通机器码文本或运行时数据误判为需求来源。
+- 过程输出：CLI 默认输出阶段开始/结束和关键子步骤 trace，包括模型输入规模、模型可展示摘要、PDF 提取、文件搜索和 shell 命令。
+- 规划输入裁剪：`plan_inspection` 只传入优先级较高的上下文摘要，避免完整文件索引导致模型规划阶段过慢。
 - 工具：filesystem、shell、pdf。
 - 模型：通过 `DEEPSEEK_API_KEY`、`DEEPSEEK_API_BASE`、`RESTATER_MODEL` 调用 DeepSeek-compatible chat completion API。
 - 可观测性：CLI 默认输出每个 Graph 节点的开始和结束；每个节点完成后刷新 `state.json`。

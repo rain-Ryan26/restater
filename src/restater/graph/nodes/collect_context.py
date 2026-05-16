@@ -8,7 +8,7 @@ from restater.models import EvidenceItem, RunError
 from restater.services import ProjectScanner
 
 
-def make_collect_context_node(config: RestaterConfig):
+def make_collect_context_node(config: RestaterConfig, progress=None):
     scanner = ProjectScanner(config)
 
     def collect_context(state: ProjectCheckState) -> dict:
@@ -17,7 +17,15 @@ def make_collect_context_node(config: RestaterConfig):
         reasoning_log = list(state.get("reasoning_log", []))
         reasoning_log.append("collect_context: inspect user note, scan project files, and classify requirement sources.")
         try:
+            if progress:
+                progress("collect_context", "trace", f"scan project: {project_path}")
             context, sources = scanner.scan(project_path)
+            if progress:
+                progress(
+                    "collect_context",
+                    "trace",
+                    f"scanned files={len(context)}, requirement_sources={len(sources)}",
+                )
         except Exception as exc:
             errors.append(RunError(stage="collect_context", message="Project scan failed.", detail=str(exc)))
             context, sources = [], []
@@ -39,4 +47,3 @@ def make_collect_context_node(config: RestaterConfig):
         }
 
     return collect_context
-

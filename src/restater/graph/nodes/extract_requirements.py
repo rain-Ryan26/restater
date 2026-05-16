@@ -11,7 +11,7 @@ from restater.tools.filesystem import read_text_preview
 from restater.tools.pdf import extract_pdf_text
 
 
-def make_extract_requirements_node(config: RestaterConfig, client: DeepSeekChatClient):
+def make_extract_requirements_node(config: RestaterConfig, client: DeepSeekChatClient, progress=None):
     system_prompt = load_prompt("extract_requirements.md")
 
     def extract_requirements(state: ProjectCheckState) -> dict:
@@ -20,12 +20,19 @@ def make_extract_requirements_node(config: RestaterConfig, client: DeepSeekChatC
         reasoning_log = list(state.get("reasoning_log", []))
         reasoning_log.append("extract_requirements: read likely requirement sources and ask the model for a structured list.")
         sources_payload = []
-        for source in state.get("requirement_sources", []):
+        sources = state.get("requirement_sources", [])
+        if progress:
+            progress("extract_requirements", "trace", f"read requirement sources: {len(sources)}")
+        for index, source in enumerate(sources, start=1):
             path = project_path / source.path
             try:
                 if source.source_type == "pdf":
+                    if progress:
+                        progress("extract_requirements", "trace", f"pdf extract {index}/{len(sources)}: {source.path}")
                     content = extract_pdf_text(path, page_limit=config.pdf_page_limit, char_limit=config.text_read_limit)
                 else:
+                    if progress:
+                        progress("extract_requirements", "trace", f"text preview {index}/{len(sources)}: {source.path}")
                     content = read_text_preview(path, limit=config.text_read_limit)
             except Exception as exc:
                 errors.append(RunError(stage="extract_requirements", message=f"Failed to read {source.path}.", detail=str(exc)))
@@ -41,17 +48,25 @@ def make_extract_requirements_node(config: RestaterConfig, client: DeepSeekChatC
             }
 
         try:
+            user_prompt = compact_json(
+                {
+                    "project_path": state["project_path"],
+                    "user_note": state.get("user_note", ""),
+                    "sources": sources_payload,
+                }
+            )
+            if progress:
+                progress("extract_requirements", "trace", f"model call: requirement extraction, input_chars={len(user_prompt)}")
             response = client.complete_json(
                 system_prompt,
-                compact_json(
-                    {
-                        "project_path": state["project_path"],
-                        "user_note": state.get("user_note", ""),
-                        "sources": sources_payload,
-                    }
-                ),
+                user_prompt,
             )
             requirements = [RequirementItem(**item) for item in response.get("requirements", [])]
+            if progress:
+                summary = response.get("decision_summary")
+                if isinstance(summary, str) and summary.strip():
+                    progress("extract_requirements", "trace", f"model summary: {summary.strip()[:300]}")
+                progress("extract_requirements", "trace", f"model returned requirements={len(requirements)}")
         except Exception as exc:
             errors.append(
                 RunError(

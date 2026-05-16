@@ -12,7 +12,7 @@ from restater.tools.pdf import extract_pdf_text
 from restater.tools.shell import run_powershell
 
 
-def make_execute_inspection_node(config: RestaterConfig):
+def make_execute_inspection_node(config: RestaterConfig, progress=None):
     def execute_inspection(state: ProjectCheckState) -> dict:
         project_path = Path(state["project_path"])
         evidence = list(state.get("evidence", []))
@@ -21,11 +21,22 @@ def make_execute_inspection_node(config: RestaterConfig):
         reasoning_log = list(state.get("reasoning_log", []))
         reasoning_log.append("execute_inspection: execute planned filesystem, pdf, and shell checks and record evidence.")
 
-        for step in state.get("plan", []):
+        plan = state.get("plan", [])
+        if progress:
+            progress("execute_inspection", "trace", f"execute plan steps={len(plan)}")
+        for index, step in enumerate(plan, start=1):
             target_id = step.target_requirement_ids[0] if step.target_requirement_ids else None
             try:
+                if progress:
+                    progress(
+                        "execute_inspection",
+                        "trace",
+                        f"step {index}/{len(plan)} {step.id}: tool={step.tool_hint}, action={step.action[:120]}",
+                    )
                 if step.tool_hint == "shell" or step.commands:
                     for command in step.commands:
+                        if progress:
+                            progress("execute_inspection", "trace", f"shell: {command}")
                         result = run_powershell(command, project_path)
                         shell_results.append(result)
                         evidence.append(
@@ -39,6 +50,8 @@ def make_execute_inspection_node(config: RestaterConfig):
                         )
                 elif step.tool_hint == "pdf":
                     for rel in matching_files(project_path, step.file_patterns or ["*.pdf"]):
+                        if progress:
+                            progress("execute_inspection", "trace", f"pdf extract: {rel.relative_to(project_path)}")
                         text = extract_pdf_text(rel, page_limit=config.pdf_page_limit, char_limit=4000)
                         evidence.append(
                             EvidenceItem(
@@ -50,7 +63,15 @@ def make_execute_inspection_node(config: RestaterConfig):
                             )
                         )
                 else:
+                    if progress:
+                        progress(
+                            "execute_inspection",
+                            "trace",
+                            f"filesystem search: terms={step.search_terms[:6]}, patterns={step.file_patterns[:6]}",
+                        )
                     matches = search_text(project_path, step.search_terms, patterns=step.file_patterns, limit=20)
+                    if progress:
+                        progress("execute_inspection", "trace", f"filesystem matches={len(matches)}")
                     summary = "; ".join(matches) if matches else "No direct text matches found."
                     evidence.append(
                         EvidenceItem(
@@ -63,6 +84,8 @@ def make_execute_inspection_node(config: RestaterConfig):
                     )
                     for rel in matching_files(project_path, step.file_patterns)[:5]:
                         try:
+                            if progress:
+                                progress("execute_inspection", "trace", f"text preview: {rel.relative_to(project_path)}")
                             preview = read_text_preview(rel, limit=2000)
                         except Exception:
                             continue
@@ -105,4 +128,3 @@ def summarize_shell(result: ShellResult) -> str:
     if result.exit_code == 0:
         return f"Command succeeded with exit code 0. Output: {out}"
     return f"Command failed with exit code {result.exit_code}. stdout: {out} stderr: {err}"
-

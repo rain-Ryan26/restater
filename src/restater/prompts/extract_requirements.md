@@ -11,6 +11,7 @@ Task:
 
 Schema:
 {
+  "decision_summary": "brief visible summary of the source selection and extraction choices",
   "requirements": [
     {
       "id": "REQ-001",
@@ -25,4 +26,3 @@ Schema:
 }
 
 Use a brief decision summary internally before deciding, but output only JSON.
-

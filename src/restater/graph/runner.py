@@ -15,7 +15,7 @@ from restater.models import RunError
 from restater.tools.filesystem import write_text_no_bom
 
 
-ProgressCallback = Callable[[str, str], None]
+ProgressCallback = Callable[[str, str, str | None], None]
 
 
 def run_check(
@@ -72,12 +72,20 @@ def make_cli_progress(enabled: bool = True) -> ProgressCallback | None:
         return None
 
     started_at: dict[str, float] = {}
+    seen_any_stage = False
 
-    def progress(stage: str, event: str) -> None:
+    def progress(stage: str, event: str, detail: str | None = None) -> None:
+        nonlocal seen_any_stage
         now = time.monotonic()
         if event == "start":
             started_at[stage] = now
+            if seen_any_stage:
+                print(file=sys.stderr, flush=True)
+            seen_any_stage = True
             print(f"[restater] start {stage}", file=sys.stderr, flush=True)
+            return
+        if event == "trace":
+            print(f"[restater]   - {detail or stage}", file=sys.stderr, flush=True)
             return
         elapsed = now - started_at.get(stage, now)
         if event == "failed":

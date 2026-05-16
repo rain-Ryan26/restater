@@ -12,7 +12,6 @@ REQUIREMENT_KEYWORDS = [
     "requirement",
     "requirements",
     "assignment",
-    "project",
     "rubric",
     "spec",
     "任务",
@@ -21,6 +20,21 @@ REQUIREMENT_KEYWORDS = [
     "提交",
     "说明",
 ]
+
+REQUIREMENT_DIR_MARKERS = {
+    "requirement",
+    "requirements",
+    "rubric",
+    "assignment",
+    "spec",
+    "specs",
+}
+
+REQUIREMENT_FILE_NAMES = {
+    "agent.md",
+    "agents.md",
+    "readme.md",
+}
 
 
 class ProjectScanner:
@@ -60,7 +74,7 @@ def classify_path(relative_path: str, path: Path) -> tuple[str, float]:
     name = path.name.lower()
     suffix = path.suffix.lower()
 
-    if any(keyword in lowered for keyword in REQUIREMENT_KEYWORDS) and suffix in {".pdf", ".md", ".txt", ".docx"}:
+    if is_requirement_candidate(relative_path, name, suffix):
         return "requirement", 0.8
     if "test" in lowered or "spec" in name:
         return "test", 0.75
@@ -75,6 +89,20 @@ def classify_path(relative_path: str, path: Path) -> tuple[str, float]:
     return "unknown", 0.2
 
 
+def is_requirement_candidate(relative_path: str, name: str, suffix: str) -> bool:
+    if suffix not in {".pdf", ".md", ".txt", ".docx"}:
+        return False
+
+    lowered = relative_path.lower()
+    parts = {part for part in lowered.replace("\\", "/").split("/") if part}
+    stem = Path(name).stem.lower()
+
+    if parts.intersection(REQUIREMENT_DIR_MARKERS):
+        return True
+    if name in REQUIREMENT_FILE_NAMES:
+        return True
+    return any(keyword in stem for keyword in REQUIREMENT_KEYWORDS)
+
+
 def compact(text: str) -> str:
     return " ".join(text.split())[:1000]
-
